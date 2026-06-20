@@ -1,0 +1,4 @@
+interface:
+  display_name: "Security Review Levels"
+  short_description: "Pentest seguro por niveles de profundidad"
+  default_prompt: "Use $security-review-levels to run an authorized security review with the right depth level and a clean final report."
