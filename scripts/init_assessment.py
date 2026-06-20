@@ -21,7 +21,7 @@ def main():
     parser = argparse.ArgumentParser(description="Create a security assessment report workspace.")
     parser.add_argument("name", help="Assessment name, e.g. neovet or huellas")
     parser.add_argument("--out", default="reportes", help="Base output directory")
-    parser.add_argument("--level", type=int, choices=range(0, 5), default=2)
+    parser.add_argument("--level", type=int, choices=range(0, 6), default=2)
     args = parser.parse_args()
 
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -41,6 +41,7 @@ def main():
         "## Needs Review\n\n"
         "## Fix Now\n\n"
         "## Evidence Index\n",
+        "\n## Enterprise Tracking\n",
         encoding="utf-8",
     )
 

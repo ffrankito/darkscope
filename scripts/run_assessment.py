@@ -15,6 +15,7 @@ STAGES_BY_LEVEL = {
     2: ["recon", "content", "app", "vuln"],
     3: ["recon", "content", "app", "data", "vuln"],
     4: ["recon", "content", "app", "data", "vuln"],
+    5: ["recon", "content", "app", "data", "vuln"],
 }
 
 PROD_MARKERS = ["vercel.app", "prod", "production"]
@@ -126,7 +127,7 @@ def main():
     parser.add_argument("target", help="Base URL to assess")
     parser.add_argument("--name", default=None, help="Assessment name")
     parser.add_argument("--out", default="reportes", help="Base output directory")
-    parser.add_argument("--level", type=int, choices=range(0, 5), default=2)
+    parser.add_argument("--level", type=int, choices=range(0, 6), default=2)
     parser.add_argument("--env", choices=["auto", "production", "staging", "local", "lab"], default="auto")
     parser.add_argument("--stage", choices=["all", "recon", "content", "app", "data", "vuln"], default="all")
     parser.add_argument("--execute", action="store_true", help="Run commands. Without this flag, only writes the plan.")
@@ -135,10 +136,12 @@ def main():
     args = parser.parse_args()
 
     prod = is_prod(args.target, args.env)
-    if prod and args.level >= 4:
+    if prod and args.level == 4:
         raise SystemExit("Refusing level 4 against production. Use staging/local/lab with fake data.")
     if args.level == 4 and not args.allow_level_4:
         raise SystemExit("Level 4 requires --allow-level-4 and a non-production environment.")
+    if args.level == 5 and args.stage == "all":
+        print("Level 5 uses production-safe commands plus enterprise tracking. Run aggressive tests only in staging/lab.")
 
     name = args.name or host_from_target(args.target)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -171,4 +174,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

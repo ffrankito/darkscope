@@ -41,6 +41,7 @@ For staging or local environments with fake data:
 - Read `references/supabase-nextjs.md` for Next.js, Vercel, Supabase, RLS, anon key, JWT, CORS, auth, and role testing.
 - Read `references/auth-roles.md` when test accounts, cookies, JWTs, or role matrices are in scope.
 - Read `references/tool-recipes.md` when choosing concrete commands for common tools.
+- Use Level 5 from `references/levels.md` when the user asks for enterprise-grade assurance, reusable security programs, CI security gates, retesting, or executive reporting.
 - Read `references/report-template.md` when producing a final Markdown, HTML, or PDF report.
 
 ## Stage Guidance

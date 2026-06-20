@@ -10,6 +10,7 @@ LEVEL_TOOLS = {
     2: ["curl", "jq", "nmap", "whatweb", "wafw00f", "sslscan", "nikto", "nuclei", "katana", "gitleaks", "trufflehog", "feroxbuster", "ffuf", "zap.sh"],
     3: ["curl", "jq", "nmap", "whatweb", "wafw00f", "sslscan", "nikto", "nuclei", "katana", "gitleaks", "trufflehog", "feroxbuster", "ffuf", "zap.sh", "sqlmap"],
     4: ["curl", "jq", "nmap", "whatweb", "wafw00f", "sslscan", "nikto", "nuclei", "katana", "gitleaks", "trufflehog", "feroxbuster", "ffuf", "zap.sh", "sqlmap"],
+    5: ["curl", "jq", "nmap", "whatweb", "wafw00f", "sslscan", "nikto", "nuclei", "katana", "gitleaks", "trufflehog", "feroxbuster", "ffuf", "zap.sh", "sqlmap", "semgrep", "trivy"],
 }
 
 APT_HINTS = {
@@ -36,7 +37,7 @@ def find_tool(tool):
 
 def main():
     parser = argparse.ArgumentParser(description="Check installed tools for a security review depth level.")
-    parser.add_argument("--level", type=int, choices=range(0, 5), default=2)
+    parser.add_argument("--level", type=int, choices=range(0, 6), default=2)
     args = parser.parse_args()
 
     tools = LEVEL_TOOLS[args.level]

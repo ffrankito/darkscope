@@ -123,3 +123,39 @@ Tools:
 
 Never run on production with real data unless the user gives explicit approval, a rollback plan exists, and the action is limited to canary records.
 
+## Level 5 - Enterprise Assurance
+
+Purpose: turn the assessment into a repeatable security program, not only a one-time scan.
+
+Best target:
+
+- Production plus staging plus source code plus cloud/security configuration.
+- Requires clear owners, retest window, and remediation tracking.
+
+Includes:
+
+- Level 3 production-safe testing.
+- Level 4 aggressive testing only in staging/lab with fake data.
+- Source code review for auth, tenant isolation, RLS, secrets, CORS, webhooks, cron jobs, payments, AI/chatbot cost controls, and audit logs.
+- Role matrix for every business role.
+- Data classification and PII/PHI inventory.
+- Threat model for main workflows.
+- CI security gates: dependency scan, Semgrep/custom rules, secret scanning, and security regression tests.
+- Evidence package with sanitized artifacts, severity, owner, due date, and retest result.
+- Executive summary plus technical appendix.
+
+Required gates:
+
+- Written scope and exclusions.
+- Test accounts for every role.
+- Canary data plan.
+- Staging/lab environment for destructive or high-volume tests.
+- Retest after fixes.
+
+Enterprise success criteria:
+
+- No anonymous access to private data.
+- No role can read or mutate data outside its business need.
+- Public endpoints have rate limits, logging, and abuse controls.
+- Security tests can be rerun after every release.
+- Critical/high findings have owners and deadlines.

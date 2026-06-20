@@ -40,6 +40,17 @@ For each finding:
 - Fix
 - Retest steps
 
+## Enterprise Tracking
+
+For Level 5 reports, add:
+
+- Owner
+- Due date
+- Remediation status: open, in progress, fixed, accepted risk
+- Retest date
+- Retest result
+- Regression test added: yes/no
+
 ## Normal / Expected Results
 
 List controls that worked.
@@ -59,4 +70,3 @@ List local files. Do not include raw secrets, tokens, passwords, or private valu
 ## Sanitization Notes
 
 State what was intentionally redacted or deleted.
-
