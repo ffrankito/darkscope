@@ -1,4 +1,4 @@
 interface:
-  display_name: "Security Review Levels"
-  short_description: "Pentest seguro por niveles de profundidad"
-  default_prompt: "Use $security-review-levels to run an authorized security review with the right depth level and a clean final report."
+  display_name: "DarkScope"
+  short_description: "Pentest enterprise por niveles"
+  default_prompt: "Use $darkscope to run an authorized security review with the right depth level and a clean final report."

@@ -1,9 +1,9 @@
 ---
-name: security-review-levels
+name: darkscope
 description: Authorized security review and pentest workflow for web apps, SaaS, CRM systems, landing pages, Next.js/Vercel/Supabase projects, APIs, and chatbot widgets. Use when Codex must plan or run a defensive assessment by depth level, choose safe tools, avoid destructive production actions, collect evidence, summarize findings in plain language, or generate a final report with fixes.
 ---
 
-# Security Review Levels
+# DarkScope
 
 ## Core Rule
 
