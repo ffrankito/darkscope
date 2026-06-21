@@ -1,13 +1,11 @@
 ```
- ____            _     ____                   
-|  _ \  __ _ _ _| |_  / ___|  ___ ___  _ __  
-| | | |/ _` | '__| __| \___ \ / __/ _ \| '_ \ 
-| |_| | (_| | |  | |_   ___) | (_| (_) | |_) |
-|____/ \__,_|_|   \__| |____/ \___\___/| .__/ 
-                                       |_|    
+╔════════════════════════════════════════════╗
+║        DARK SCOPE                          ║
+║   Security Assessment Framework            ║
+╚════════════════════════════════════════════╝
 ```
 
-**Authorized Security Assessment Framework**
+**Authorized Penetration Testing Framework**
 
 ![Status](https://img.shields.io/badge/Status-Production%20Ready-000?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-000?style=flat-square)
