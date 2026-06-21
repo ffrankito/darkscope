@@ -6,6 +6,8 @@
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&style=for-the-badge)](https://www.python.org/)
 [![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)]()
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)]()
+[![Free & Open Source](https://img.shields.io/badge/Free%20%26%20Open%20Source-100%25-success?style=for-the-badge)]()
+[![No Paid Features](https://img.shields.io/badge/No%20Paid%20Features-0%25-success?style=for-the-badge)]()
 
 ---
 
@@ -304,6 +306,31 @@ Auto-generates:
 - Exploit vulnerabilities
 
 **Authorization is mandatory.** Every assessment logged.
+
+---
+
+## 💰 Free & Open Source
+
+**DarkScope is 100% FREE. No hidden costs. No paid features.**
+
+- ✅ **Free forever** — MIT license, use commercially
+- ✅ **No subscriptions** — Own your security testing
+- ✅ **All tools included** — nmap, nuclei, nikto, etc. (all free/open source)
+- ✅ **No paywalls** — Full features at no cost
+- ✅ **Community-driven** — GitHub issues, contributions welcome
+
+All external tools DarkScope uses are also **free and open source**:
+- `nmap` — Open source network mapper
+- `nikto` — Free web server scanner
+- `nuclei` — Open source template scanner
+- `feroxbuster` — Free directory enumerator
+- `semgrep` — Free static analysis
+- `trivy` — Open source vulnerability scanner
+
+**Optional** (but also free):
+- `weasyprint` — Free PDF generation (for HTML→PDF reports)
+- `pip audit` — Free Python vulnerability scanning
+- `npm audit` — Free Node.js vulnerability scanning
 
 ---
 
