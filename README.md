@@ -1,154 +1,182 @@
-# 🕶️ DarkScope
+```
+ ____            _     ____                   
+|  _ \  __ _ _ _| |_  / ___|  ___ ___  _ __  
+| | | |/ _` | '__| __| \___ \ / __/ _ \| '_ \ 
+| |_| | (_| | |  | |_   ___) | (_| (_) | |_) |
+|____/ \__,_|_|   \__| |____/ \___\___/| .__/ 
+                                       |_|    
+```
 
-> **Enterprise-grade authorized security assessments. Deep + Safe + Automated.**
+**Authorized Security Assessment Framework**
 
-[![GitHub](https://img.shields.io/badge/GitHub-ffrankito%2Fdarkscope-black?logo=github&style=for-the-badge)](https://github.com/ffrankito/darkscope)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&style=for-the-badge)](https://www.python.org/)
-[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)]()
-[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)]()
-[![Free & Open Source](https://img.shields.io/badge/Free%20%26%20Open%20Source-100%25-success?style=for-the-badge)]()
-[![No Paid Features](https://img.shields.io/badge/No%20Paid%20Features-0%25-success?style=for-the-badge)]()
+![Status](https://img.shields.io/badge/Status-Production%20Ready-000?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.11%2B-000?style=flat-square)
+![License](https://img.shields.io/badge/License-MIT-000?style=flat-square)
+![Free](https://img.shields.io/badge/Cost-Free-000?style=flat-square)
+
+[GitHub](https://github.com/ffrankito/darkscope) · [Docs](QUICKSTART.md) · [Architecture](ARCHITECTURE.md)
 
 ---
 
-## What Is DarkScope?
+## Overview
 
-DarkScope is a **structured, repeatable security assessment framework** for teams that need real offensive signal without reckless production damage.
+DarkScope is a **modular pentesting framework** that automates security assessment phases while maintaining strict safety boundaries. Designed for authorized assessments on production and staging environments.
 
-Modern apps are complex. You need to know:
-- ✅ What's actually exposed to anonymous users?
-- ✅ Can attackers bypass authentication?
-- ✅ Are role boundaries working correctly?
-- ✅ What changed since the last assessment?
+**No commercial tools required.** All integrations use free/open-source security tools (nmap, nikto, nuclei, sqlmap, etc.)
 
-**DarkScope answers these** — with safety guardrails built in, evidence automatically sanitized, and remediation tracked over time.
+### What DarkScope Does
 
-### The Problem It Solves
+| Phase | Tools | What You Get |
+|-------|-------|--------------|
+| Reconnaissance | nmap, whatweb, wafw00f, sslscan | Headers, tech stack, WAF, SSL config |
+| Discovery | ffuf, feroxbuster, katana | Routes, endpoints, JavaScript analysis |
+| Vulnerability Scanning | nikto, nuclei, zap | Web app vulns, template-based detection |
+| SQL Testing | sqlmap, manual payloads | SQL injection, database fingerprinting |
+| Code Analysis | semgrep, trivy, npm audit, pip audit | SAST, CVE scanning, dependency auditing |
+| Supabase Testing | Custom probes | RLS bypass, JWT validation, CORS config |
+| Plugin System | Custom checks | Org-specific security rules |
 
-| Problem | Without DarkScope | With DarkScope |
-|---------|------------------|---|
-| **Tool sprawl** | Run 12+ tools, parse output manually | One command, unified report |
-| **Safety** | Hope you don't break production | Conservative probes, no data writes |
-| **Evidence** | Screenshots, email chains | Sanitized, reproducible, auditable |
-| **Tracking** | "Did we fix that?" (unknown) | Baselines, regression detection, health scores |
-| **Reporting** | Excel, Jira, Slack threads | PDF/HTML for humans, JSON for machines |
-| **Repeatability** | Run-by-run variance | Automated, CI/CD-integrated, consistent |
+**Output:** Sanitized findings JSON → HTML/PDF reports → Interactive dashboard → Baseline tracking
 
----
+### What DarkScope Doesn't Do
 
-## The Promise
-
-🎯 **Go deep without breaking things**
-- Aggressive probes safe for staging/lab
-- Conservative read-only probes on production
-- Automatic evidence sanitization (zero real customer data in reports)
-
-🔒 **Authorization that can't be skipped**
-- Explicit consent form (mandatory, no bypass flags)
-- Audit log with timestamp + user + hostname
-- Remediation tracking with owner + due date
-
-📊 **Enterprise program tracking**
-- Baseline comparisons (fixed vs new vs regressions)
-- Health score + program trends
-- Interactive dashboard with historical data
-
-🔌 **Built for modern stacks**
-- Supabase RLS testing (automated)
-- Next.js/Vercel route discovery
-- Rate limiting + CORS validation
-- Plugin system for custom checks
+- ❌ Destructive testing (no data modification/deletion)
+- ❌ Credential attacks (no brute force, password spray)
+- ❌ DOS attacks
+- ❌ Anything without explicit authorization
+- ❌ Automatic remediation (findings only)
 
 ---
 
-## Quick Start
+## Installation
 
-### 1. Install
 ```bash
-git clone https://github.com/ffrankito/darkscope.git
-cd darkscope
-pip install -r requirements.txt
-python3 scripts/check_tools.py --level 2 --auto-install
+$ git clone https://github.com/ffrankito/darkscope.git
+$ cd darkscope
+$ pip install -r requirements.txt
+$ python3 scripts/check_tools.py --level 2 --auto-install
 ```
 
-### 2. Authorize
+**Dependencies:** Python 3.11+, curl, jq  
+**Tools:** Auto-detected and installed (nmap, nikto, nuclei, etc. optional)
+
+## Usage
+
+### Dry-run (view plan without executing)
 ```bash
-python3 scripts/request_authorization.py https://your-app.com --level 2
-```
-→ Answer the interactive prompt. Creates audit log automatically.
-
-### 3. Assess
-```bash
-python3 scripts/run_assessment.py https://your-app.com \
-  --level 2 --authorized --execute --output results
-```
-
-### 4. Report
-```bash
-# HTML + PDF for humans
-python3 scripts/generate_report_v2.py results/findings.json \
-  --output-pdf report.pdf --level 5
-
-# Dashboard with trends
-python3 scripts/dashboard.py results --output dashboard.html
-
-# Track progress
-python3 scripts/compare_baselines.py \
-  --current results/findings.json --prior prior/findings.json
+$ python3 scripts/run_assessment.py https://target.com --level 2
+# Generates run_plan.txt with all commands that would execute
 ```
 
-Done. Open `dashboard.html` in your browser.
+### Execute Assessment (Level 2: Standard Production)
+```bash
+$ python3 scripts/run_assessment.py https://target.com \
+    --level 2 \
+    --authorized \
+    --execute
+```
+
+**Output:**
+```
+results/target.com_20260621_120000/
+├── findings.json          # Machine-readable
+├── report.html            # Human-readable
+├── report.pdf             # Stakeholder report (L5+)
+├── comparison.json        # Delta vs prior
+├── assessment.log         # Audit trail
+└── darkscope_auth_logs/
+    └── auth_*.txt         # Authorization proof
+```
+
+### Generate Reports
+```bash
+$ python3 scripts/generate_report_v2.py results/findings.json \
+    --output-pdf report.pdf --level 5
+
+$ python3 scripts/dashboard.py results --output dashboard.html
+open dashboard.html
+```
+
+### Track Progress (Baseline Comparison)
+```bash
+$ python3 scripts/compare_baselines.py \
+    --current new_results/findings.json \
+    --prior old_results/findings.json
+```
+
+**Output:**
+```
+Fixed:        5 ✓
+New:          2
+Regressions:  0
+Health Trend: IMPROVING
+```
 
 ---
 
-## DarkScope Levels
+## Assessment Levels (0-5)
 
-| Level | Name | Best For | Intensity | Data Risk |
-|-------|------|----------|-----------|-----------|
-| **0** | Passive Orientation | First look, unclear scope | 🟢 None | None |
-| **1** | Safe Production Baseline | Low-noise production checks | 🟡 Low | Public only |
-| **2** | Standard Production | Real-world appsec review (typical) | 🟠 Medium | Public + anon API |
-| **3** | Deep Controlled Testing | Canary-backed deeper testing | 🔴 High | Staging + fake data |
-| **4** | Aggressive Lab | Full attack simulation | 🔴🔴 Very High | Lab only |
-| **5** | Enterprise Assurance | Automated program + CI gates | 🟠 Medium | Read-only production |
+| Level | Use Case | Tools | Scope |
+|-------|----------|-------|-------|
+| **0** | First look | whatweb, curl | Passive fingerprinting |
+| **1** | Prod baseline | +nmap, +sslscan | Network recon |
+| **2** | Standard (typical) | +nikto, +nuclei | Web app testing |
+| **3** | Deep staging | +sqlmap, +semgrep | SQL, code analysis |
+| **4** | Lab attack | +zap active | Full exploitation |
+| **5** | Enterprise CI | All tools | Automated tracking |
 
-**Key insight:** Higher level ≠ more damage. Level 5 is actually *safer* — no destructive payloads, broad coverage, automated safely.
+**Key:** Level 2 is production-safe. Higher levels require staging/lab environments. Level 5 is safest but most comprehensive (no destructive payloads, just broad coverage).
 
 ---
 
 ## What It Tests
 
-### ✅ Network & Infrastructure
-- Open ports, service enumeration
-- TLS/SSL configuration
-- Web framework detection
-- Security headers (CSP, HSTS, X-Frame-Options, etc.)
+### reconnaissance.py
+```
+nmap -sV -Pn -p 80,443,8080,8443
+whatweb -a 3
+wafw00f -a
+sslscan
+HTTP header validation (CSP, HSTS, X-Frame-Options, etc.)
+```
 
-### ✅ Web Application
-- Route discovery (public + hidden)
-- CORS misconfiguration
-- Authentication/authorization flaws
-- Common web vulns (low-risk probes only)
-- API endpoint enumeration
+### discovery.py
+```
+ffuf + feroxbuster (directory enumeration)
+katana (full crawl)
+JavaScript route extraction
+API endpoint discovery
+```
 
-### ✅ Supabase (Native Support)
-- Anonymous user access to private tables
-- RLS policy testing (SELECT/INSERT/UPDATE/DELETE)
-- JWT claims inspection
-- CORS wildcard exposure
-- Per-table JSON findings
+### vulnerability_scanning.py
+```
+nikto (CMS vulns, headers, server vulns)
+nuclei (template-based scanning)
+zap (active scanning)
+```
 
-### ✅ Next.js / Vercel
-- Server-side route exposure in JS bundles
-- API route accessibility without auth
-- Dynamic route parameter discovery
-- Source map exposure
+### sql_testing.py
+```
+Manual SQLi on common parameters
+sqlmap aggressive testing (L4+)
+Error-based detection
+Database fingerprinting
+```
 
-### ✅ Chatbot / API Abuse
-- Rate limiting validation
-- Cost control (AI endpoint throttling)
-- Credentials in localStorage
-- CORS + origin restrictions
+### code_analysis.py
+```
+semgrep (OWASP Top 10, code patterns)
+npm audit / pip audit (dependency vulns)
+trivy (CVE scanning)
+```
+
+### probe_supabase.py (Supabase-specific)
+```
+RLS testing: SELECT/INSERT/UPDATE/DELETE on anon role
+JWT inspection (claims, expiration, metadata)
+CORS wildcard detection
+Per-table findings
+```
 
 ---
 
