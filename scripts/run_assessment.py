@@ -18,6 +18,11 @@ from sanitize_evidence import EvidenceSanitizer
 from generate_report_v2 import ReportGenerator
 from compare_baselines import BaselineComparator
 from plugin_manager import PluginManager
+from reconnaissance import ReconnaissancePhase
+from discovery import DiscoveryPhase
+from vulnerability_scanning import VulnerabilityScanning
+from code_analysis import CodeAnalysisPhase
+from sql_testing import SQLTesting
 
 class AssessmentOrchestrator:
     """Orchestrate a complete security assessment"""
@@ -167,9 +172,39 @@ class AssessmentOrchestrator:
             print(f"✅ All tools available for level {self.level}")
 
     def _testing_phase(self) -> List[Dict]:
-        """Execute security tests"""
+        """Execute security tests using all available integrators"""
         findings = []
         self.logger.info("Testing phase started")
+
+        # Phase 1: Reconnaissance
+        recon = ReconnaissancePhase(self.target, level=self.level)
+        findings.extend(recon.run())
+        self.logger.info(f"Reconnaissance: {len(recon.findings)} findings")
+
+        # Phase 2: Discovery
+        if self.level >= 1:
+            discovery = DiscoveryPhase(self.target, level=self.level)
+            findings.extend(discovery.run())
+            self.logger.info(f"Discovery: {len(discovery.findings)} findings")
+
+        # Phase 3: Vulnerability Scanning
+        if self.level >= 2:
+            scanner = VulnerabilityScanning(self.target, level=self.level)
+            findings.extend(scanner.run())
+            self.logger.info(f"Vulnerability scanning: {len(scanner.findings)} findings")
+
+        # Phase 4: SQL Testing
+        if self.level >= 3:
+            sqli = SQLTesting(self.target, level=self.level)
+            findings.extend(sqli.run())
+            self.logger.info(f"SQL testing: {len(sqli.findings)} findings")
+
+        # Phase 5: Code Analysis (if repo path provided)
+        if self.level >= 3:
+            code = CodeAnalysisPhase(self.target, level=self.level)
+            findings.extend(code.run("."))
+            self.logger.info(f"Code analysis: {len(code.findings)} findings")
+
         return findings
 
     def _test_supabase(self, config: Dict) -> List[Dict]:
