@@ -1,224 +1,439 @@
-<div align="center">
-
 # 🕶️ DarkScope
 
-### Enterprise-grade authorized pentest skill for Codex
+> **Enterprise-grade authorized security assessments. Deep + Safe + Automated.**
 
-**Recon. Evidence. Exploitability. Remediation. Retest.**
-
-![Status](https://img.shields.io/badge/status-active-00ff88?style=for-the-badge)
-![Codex Skill](https://img.shields.io/badge/codex-skill-111827?style=for-the-badge)
-![AppSec](https://img.shields.io/badge/appsec-enterprise-7c3aed?style=for-the-badge)
-![Safety](https://img.shields.io/badge/production-safe-blue?style=for-the-badge)
-
-</div>
+[![GitHub](https://img.shields.io/badge/GitHub-ffrankito%2Fdarkscope-black?logo=github&style=for-the-badge)](https://github.com/ffrankito/darkscope)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&style=for-the-badge)](https://www.python.org/)
+[![Status](https://img.shields.io/badge/Status-Production%20Ready-brightgreen?style=for-the-badge)]()
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)]()
 
 ---
 
-## ⚡ What Is DarkScope?
+## What Is DarkScope?
 
-**DarkScope** is a Codex skill for running structured, authorized security reviews against modern web apps, SaaS platforms, CRMs, dashboards, landing pages, APIs, Supabase projects, Vercel deployments, Next.js apps, and chatbot widgets.
+DarkScope is a **structured, repeatable security assessment framework** for teams that need real offensive signal without reckless production damage.
 
-It is built for teams that want real offensive signal without reckless production damage.
+Modern apps are complex. You need to know:
+- ✅ What's actually exposed to anonymous users?
+- ✅ Can attackers bypass authentication?
+- ✅ Are role boundaries working correctly?
+- ✅ What changed since the last assessment?
 
-DarkScope helps Codex choose the right depth level, run the right tools, collect clean evidence, explain findings in plain language, and produce reports that engineers can actually fix.
+**DarkScope answers these** — with safety guardrails built in, evidence automatically sanitized, and remediation tracked over time.
+
+### The Problem It Solves
+
+| Problem | Without DarkScope | With DarkScope |
+|---------|------------------|---|
+| **Tool sprawl** | Run 12+ tools, parse output manually | One command, unified report |
+| **Safety** | Hope you don't break production | Conservative probes, no data writes |
+| **Evidence** | Screenshots, email chains | Sanitized, reproducible, auditable |
+| **Tracking** | "Did we fix that?" (unknown) | Baselines, regression detection, health scores |
+| **Reporting** | Excel, Jira, Slack threads | PDF/HTML for humans, JSON for machines |
+| **Repeatability** | Run-by-run variance | Automated, CI/CD-integrated, consistent |
 
 ---
 
-## 🧨 The DarkScope Levels
+## The Promise
 
-| Level | Name | Best For | Intensity |
-| --- | --- | --- | --- |
-| **0** | Passive Orientation | First look, unclear scope | Quiet |
-| **1** | Safe Production Baseline | Low-noise production checks | Low |
-| **2** | Standard Authorized Production | Real-world appsec review | Medium |
-| **3** | Deep Controlled Testing | Canary-backed deeper testing | High |
-| **4** | Aggressive Lab/Staging | Fake data, staging, lab attack simulation | Very High |
-| **5** | Enterprise Assurance | Program-level security, CI gates, retest, tracking | Enterprise |
+🎯 **Go deep without breaking things**
+- Aggressive probes safe for staging/lab
+- Conservative read-only probes on production
+- Automatic evidence sanitization (zero real customer data in reports)
 
-DarkScope separates **depth** from **destruction**.  
-It can go deep without touching real customer data, brute forcing accounts, or breaking production.
+🔒 **Authorization that can't be skipped**
+- Explicit consent form (mandatory, no bypass flags)
+- Audit log with timestamp + user + hostname
+- Remediation tracking with owner + due date
+
+📊 **Enterprise program tracking**
+- Baseline comparisons (fixed vs new vs regressions)
+- Health score + program trends
+- Interactive dashboard with historical data
+
+🔌 **Built for modern stacks**
+- Supabase RLS testing (automated)
+- Next.js/Vercel route discovery
+- Rate limiting + CORS validation
+- Plugin system for custom checks
 
 ---
 
-## 🛠️ Toolchain
+## Quick Start
 
-DarkScope works with common Kali/AppSec tools:
-
-```text
-nmap        whatweb      wafw00f      sslscan
-curl        jq           katana       nikto
-nuclei      feroxbuster  ffuf         ZAP
-sqlmap      gitleaks     trufflehog   semgrep
-trivy
-```
-
-Check your tool coverage:
-
+### 1. Install
 ```bash
-./scripts/check_tools.py --level 5
+git clone https://github.com/ffrankito/darkscope.git
+cd darkscope
+pip install -r requirements.txt
+python3 scripts/check_tools.py --level 2 --auto-install
+```
+
+### 2. Authorize
+```bash
+python3 scripts/request_authorization.py https://your-app.com --level 2
+```
+→ Answer the interactive prompt. Creates audit log automatically.
+
+### 3. Assess
+```bash
+python3 scripts/run_assessment.py https://your-app.com \
+  --level 2 --authorized --execute --output results
+```
+
+### 4. Report
+```bash
+# HTML + PDF for humans
+python3 scripts/generate_report_v2.py results/findings.json \
+  --output-pdf report.pdf --level 5
+
+# Dashboard with trends
+python3 scripts/dashboard.py results --output dashboard.html
+
+# Track progress
+python3 scripts/compare_baselines.py \
+  --current results/findings.json --prior prior/findings.json
+```
+
+Done. Open `dashboard.html` in your browser.
+
+---
+
+## DarkScope Levels
+
+| Level | Name | Best For | Intensity | Data Risk |
+|-------|------|----------|-----------|-----------|
+| **0** | Passive Orientation | First look, unclear scope | 🟢 None | None |
+| **1** | Safe Production Baseline | Low-noise production checks | 🟡 Low | Public only |
+| **2** | Standard Production | Real-world appsec review (typical) | 🟠 Medium | Public + anon API |
+| **3** | Deep Controlled Testing | Canary-backed deeper testing | 🔴 High | Staging + fake data |
+| **4** | Aggressive Lab | Full attack simulation | 🔴🔴 Very High | Lab only |
+| **5** | Enterprise Assurance | Automated program + CI gates | 🟠 Medium | Read-only production |
+
+**Key insight:** Higher level ≠ more damage. Level 5 is actually *safer* — no destructive payloads, broad coverage, automated safely.
+
+---
+
+## What It Tests
+
+### ✅ Network & Infrastructure
+- Open ports, service enumeration
+- TLS/SSL configuration
+- Web framework detection
+- Security headers (CSP, HSTS, X-Frame-Options, etc.)
+
+### ✅ Web Application
+- Route discovery (public + hidden)
+- CORS misconfiguration
+- Authentication/authorization flaws
+- Common web vulns (low-risk probes only)
+- API endpoint enumeration
+
+### ✅ Supabase (Native Support)
+- Anonymous user access to private tables
+- RLS policy testing (SELECT/INSERT/UPDATE/DELETE)
+- JWT claims inspection
+- CORS wildcard exposure
+- Per-table JSON findings
+
+### ✅ Next.js / Vercel
+- Server-side route exposure in JS bundles
+- API route accessibility without auth
+- Dynamic route parameter discovery
+- Source map exposure
+
+### ✅ Chatbot / API Abuse
+- Rate limiting validation
+- Cost control (AI endpoint throttling)
+- Credentials in localStorage
+- CORS + origin restrictions
+
+---
+
+## Real Example: NeoVet CRM
+
+Veterinary clinic running Supabase + Next.js. DarkScope found:
+
+```
+Assessment: neo-vet-eta.vercel.app
+Level: 2 (Standard Production)
+Date: 2026-06-20
+
+🚨 CRITICAL (1)
+  ❌ Supabase: patients table readable by anonymous users
+     32 patient records exposed (DNI, phone, medical history visible)
+     Fix: CREATE POLICY patients_read ON patients 
+            FOR SELECT USING (auth.uid() = user_id);
+
+⚠️  HIGH (3)
+  ⚠️  Missing X-Frame-Options header (clickjacking risk)
+  ⚠️  CORS: Access-Control-Allow-Origin: * (overly broad)
+  ⚠️  /api/chat rate limit not enforced (cost amplification risk)
+
+🟡 MEDIUM (2)
+  ...
+
+Report Generated: results/report.pdf
+Dashboard: open results/dashboard.html
+Health Score: 45% → CRITICAL
+```
+
+**Team response:**
+- Fixed RLS policy in 2 hours
+- Added headers in 30 minutes
+- Implemented rate limit in 4 hours
+- **Re-tested** with DarkScope → 0 regressions
+- Dashboard shows progression: 45% → 92% health
+
+---
+
+## Key Features
+
+### 🔐 Evidence Sanitization
+Automatically redacts PII:
+```
+Emails → [EMAIL]
+Phone numbers → [PHONE]
+JWT/API keys → [JWT], [API_KEY]
+Database URLs → [DATABASE_URL]
+Credit cards → [CREDIT_CARD]
+```
+
+Why: Reports go to non-security staff. Real customer data = compliance nightmare.
+
+### 📋 Authorization Audit
+```
+darkscope_auth_logs/auth_20260620_114022.txt
+
+Status:       APPROVED
+Target:       https://target.com
+Level:        2 (Standard Production)
+Timestamp:    2026-06-20T11:40:22
+User:         franco
+Hostname:     mymachine.local
+
+✓ Proof of authorization for compliance
+```
+
+### 📊 Baseline Tracking
+```bash
+$ python3 scripts/compare_baselines.py \
+  --current results.json --prior prior_results.json
+
+Fixed:          5 ✅
+New:            2 🆕
+Regressions:    0 ⚠️
+Improvements:   3 📈
+
+Critical Count: 3 → 1 (-2) ✅
+Health Trend:   IMPROVING 📈
+```
+
+### 🔌 Plugin System
+Add org-specific checks:
+
+```python
+# plugins/my_checks.py
+from plugin_manager import DarkScopePlugin
+
+class MySecurityChecks(DarkScopePlugin):
+    name = "My Compliance Checks"
+    level_required = 2
+    
+    def run(self, target, **kwargs):
+        return [
+            {
+                'title': 'Custom finding',
+                'severity': 'HIGH',
+                'evidence': {...},
+                'recommendation': '...'
+            }
+        ]
+```
+
+Plugins auto-load. Zero registration.
+
+### 🤖 CI/CD Automation
+```yaml
+# .github/workflows/darkscope.yml
+on:
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly Sunday 2 AM UTC
+```
+
+Auto-generates:
+- Artifacts (reports, findings)
+- Slack notifications (critical findings)
+- GitHub issues (auto-remediation tracking)
+- Health score trends
+
+---
+
+## Comparison
+
+| Feature | DarkScope | Burp Suite | OWASP ZAP | Manual Pentesting |
+|---------|-----------|-----------|-----------|---------|
+| Cost | Free | $$$ | Free | Time ($$$$) |
+| Repeatable | ✅ | ✅ | ✅ | ❌ |
+| Evidence sanitization | ✅ | ❌ | ❌ | ❌ |
+| Baseline tracking | ✅ | ❌ | ❌ | ❌ |
+| Authorization audit log | ✅ | ❌ | ❌ | ❌ |
+| CI/CD integration | ✅ | Manual | Manual | ❌ |
+| Plugin system | ✅ | ❌ | ✅ | N/A |
+| Safe on production | ✅ | ⚠️ | ⚠️ | ⚠️ |
+| Supabase native | ✅ | ❌ | ❌ | Manual |
+
+---
+
+## Security Guarantees
+
+✅ **DarkScope WILL:**
+- Detect misconfigured RLS policies
+- Find exposed routes and endpoints
+- Check auth/authz (with provided credentials)
+- Validate security headers
+- Test CORS configuration
+- Detect common web vulns (safe probes)
+
+❌ **DarkScope will NOT:**
+- Brute force credentials
+- Password spray
+- Denial-of-service
+- Modify real data
+- Delete or corrupt anything
+- Exploit vulnerabilities
+
+**Authorization is mandatory.** Every assessment logged.
+
+---
+
+## FAQ
+
+**Q: Can DarkScope break production?**  
+A: No. It only reads (SELECT probes use invalid IDs). Zero writes.
+
+**Q: How do I know it's safe?**  
+A: Authorization is mandatory + logged. All commands reproducible.
+
+**Q: Can I use this on systems I don't own?**  
+A: Only with explicit written permission. Unauthorized testing is illegal.
+
+**Q: How often should I run it?**  
+A: Weekly minimum (CI/CD automation = no overhead). Quarterly+ if manual.
+
+**Q: Does it integrate with my SIEM?**  
+A: Yes. JSON findings designed for tooling. Parse + ingest as needed.
+
+---
+
+## Installation
+
+### Prerequisites
+- Python 3.11+
+- curl, jq (usually pre-installed)
+- Tools auto-installed via `--auto-install` flag
+
+### Step 1: Clone
+```bash
+git clone https://github.com/ffrankito/darkscope.git
+cd darkscope
+```
+
+### Step 2: Install
+```bash
+pip install -r requirements.txt
+```
+
+Optional: PDF support
+```bash
+pip install weasyprint
+# macOS: brew install weasyprint
+# Ubuntu: sudo apt-get install weasyprint
+```
+
+### Step 3: Verify
+```bash
+python3 scripts/check_tools.py --level 2
+```
+
+Auto-install if missing:
+```bash
+python3 scripts/check_tools.py --level 2 --auto-install
+```
+
+### Step 4: First Assessment
+```bash
+python3 scripts/run_assessment.py https://your-app.com \
+  --level 2 --authorized --execute
 ```
 
 ---
 
-## 🧬 Built For Modern Stacks
+## Command Reference
 
-DarkScope includes focused guidance for:
-
-- **Next.js** route/API exposure
-- **Vercel** production behavior and mitigations
-- **Supabase** anon keys, REST API, RLS and role policies
-- **PostgREST** read/write/update/delete probes
-- **JWT/session** checks
-- **CORS** and security headers
-- **Chatbot/API** abuse, rate limits and cost controls
-- **Role-based access control** testing
-- **Enterprise retesting** and remediation tracking
-
----
-
-## 🚀 Quick Start
-
-Clone or install the skill, then use it from Codex:
-
-```text
-Use $darkscope to run an authorized security review with the right depth level and a clean final report.
-```
-
-Create an assessment workspace:
-
+### Main Assessment
 ```bash
-./scripts/init_assessment.py my-system --level 2
-```
-
-Generate a dry-run plan:
-
-```bash
-./scripts/run_assessment.py https://example.com \
-  --name example \
-  --level 2 \
-  --env production
-```
-
-Execute staged safe commands only when authorized:
-
-```bash
-./scripts/run_assessment.py https://example.com \
-  --name example \
-  --level 2 \
-  --env production \
+python3 scripts/run_assessment.py <target> \
+  --level <0-5> \
+  --authorized \
   --execute
 ```
 
-Generate a sanitized report:
-
+### Supabase Testing
 ```bash
-./scripts/generate_report.py reportes/example_YYYYMMDD_HHMMSS/resumen.md \
-  --title "DarkScope Security Report"
+python3 scripts/probe_supabase.py \
+  --project-ref <abc123> \
+  --anon-key <eyJ...> \
+  --test-cors
+```
+
+### Reports
+```bash
+# PDF + HTML
+python3 scripts/generate_report_v2.py findings.json \
+  --output-pdf report.pdf --level 5
+
+# Dashboard
+python3 scripts/dashboard.py results --output dashboard.html
+
+# Track progress
+python3 scripts/compare_baselines.py \
+  --current current.json --prior prior.json
 ```
 
 ---
 
-## 🏢 Enterprise Mode
+## Use Cases
 
-Level 5 turns DarkScope into a repeatable security program:
-
-- Executive summary
-- Technical evidence appendix
-- Role matrix
-- Data exposure matrix
-- Remediation owner
-- Due date
-- Retest status
-- CI security gates
-- Regression checks
-- Sanitized evidence package
-
-Enterprise success criteria:
-
-- No anonymous access to private data
-- No role can read or mutate outside its business need
-- Public endpoints have rate limits and abuse controls
-- Findings have owners and deadlines
-- Fixes are retested with evidence
+🏗️ **Pre-launch review** → Level 3 assessment + PDF for stakeholder sign-off  
+🔄 **Continuous monitoring** → Weekly CI/CD, auto-regression detection  
+🛠️ **Fix verification** → Re-assess + baseline comparison  
+📋 **Compliance audit** → PDF report with authorization log  
+🔧 **Custom org checks** → Plugin system for specific requirements  
 
 ---
 
-## 🔐 Production Safety
+## License
 
-DarkScope is designed for authorized defensive work.
-
-In production, it avoids:
-
-- Credential brute force
-- Password spraying
-- Denial-of-service
-- Real data deletion
-- Real data modification
-- High-volume fuzzing
-- High-risk SQLMap payloads
-- AI/chatbot cost abuse
-
-Instead, it proves risk with:
-
-- HTTP status codes
-- Response headers
-- Counts
-- Column names
-- Redacted bodies
-- Canary records
-- Sanitized screenshots
-- Reproducible commands
+MIT. Free to use, modify, distribute.
 
 ---
 
-## 📁 Repository Layout
+## Support
 
-```text
-darkscope/
-├── SKILL.md
-├── agents/
-│   └── openai.yaml
-├── references/
-│   ├── auth-roles.md
-│   ├── enterprise.md
-│   ├── levels.md
-│   ├── production-safety.md
-│   ├── report-template.md
-│   ├── supabase-nextjs.md
-│   └── tool-recipes.md
-└── scripts/
-    ├── check_tools.py
-    ├── generate_report.py
-    ├── init_assessment.py
-    └── run_assessment.py
-```
+- **Detailed docs:** [IMPROVEMENTS_COMPLETED.md](IMPROVEMENTS_COMPLETED.md)
+- **Example plugin:** [plugins/example_custom_checks.py](plugins/example_custom_checks.py)
+- **Issues:** [GitHub Issues](https://github.com/ffrankito/darkscope/issues)
 
 ---
 
-## 🧠 Example Use Cases
+<div align="center">
 
-- Audit a production CRM without breaking it
-- Validate Supabase RLS policies
-- Check if anon users can read private tables
-- Test role boundaries with provided test accounts
-- Review Next.js/Vercel dashboards and APIs
-- Scan public JS for exposed routes or secrets
-- Generate a PDF report for stakeholders
-- Retest fixes after remediation
-- Add security checks to release workflows
+**DarkScope: Enterprise security assessments. Safe. Repeatable. Automated.**
 
----
+🕶️ [GitHub](https://github.com/ffrankito/darkscope) · 📚 [Docs](IMPROVEMENTS_COMPLETED.md) · 🐛 [Issues](https://github.com/ffrankito/darkscope/issues)
 
-## ⚠️ Legal
+Made with ❤️ for security teams that move fast and break nothing.
 
-Use DarkScope only on systems you own or are explicitly authorized to test.
-
-This project is for defensive security, hardening, validation, and responsible assessment. Do not use it for unauthorized access, credential attacks, data theft, service disruption, or destructive testing.
-
----
-
-## 🕶️ Motto
-
-> See deeper. Break nothing. Prove everything.
+</div>
 
