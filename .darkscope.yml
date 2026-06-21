@@ -1,0 +1,122 @@
+# DarkScope Configuration
+# Central configuration for security assessments
+
+# Default assessment level (0-5)
+default_level: 2
+
+# Default environment
+default_env: production
+
+# Logging configuration
+logging:
+  level: INFO
+  format: "[%(levelname)s] %(message)s"
+  file: "assessment.log"
+
+# Assessment phases to run by level
+phases_by_level:
+  0:
+    - basic_recon
+  1:
+    - basic_recon
+    - content_discovery
+  2:
+    - basic_recon
+    - content_discovery
+    - app_testing
+    - vulnerability_scanning
+  3:
+    - basic_recon
+    - content_discovery
+    - app_testing
+    - data_testing
+    - vulnerability_scanning
+  4:
+    - basic_recon
+    - content_discovery
+    - app_testing
+    - data_testing
+    - vulnerability_scanning
+    - exploitation
+  5:
+    - basic_recon
+    - content_discovery
+    - app_testing
+    - data_testing
+    - vulnerability_scanning
+    - enterprise_tracking
+
+# Tool timeouts (seconds)
+timeouts:
+  nmap: 600
+  zap: 1200
+  nikto: 900
+  sqlmap: 1200
+  nuclei: 900
+  feroxbuster: 900
+  default: 300
+
+# Production environment safety rules
+production_safety:
+  allow_destructive: false
+  allow_level_4: false
+  allow_credential_attacks: false
+  allow_dos: false
+  max_parallel_connections: 5
+
+# Results storage
+results:
+  base_dir: "./results"
+  retention_days: 90
+  keep_sanitized: true
+  keep_raw: false
+
+# Reporting options
+reporting:
+  formats:
+    - json
+    - html
+    - pdf  # level 5+ only
+  include_evidence: true
+  include_remediation: true
+  sanitize_pii: true
+
+# Evidence patterns to sanitize
+sanitization:
+  patterns:
+    - email
+    - phone
+    - dnI
+    - jwt
+    - api_key
+    - database_url
+    - credit_card
+    - ssn
+
+# Supabase testing (if applicable)
+supabase:
+  enabled: false
+  verify_ssl: true
+  test_cors: true
+  test_jwt: true
+
+# Plugin system
+plugins:
+  enabled: true
+  directory: "./plugins"
+  auto_load: true
+
+# CI/CD Integration
+ci:
+  enabled: false
+  fail_on_critical: true
+  fail_on_regression: true
+  slack_webhook: null
+  github_issues: false
+
+# Baseline tracking
+baselines:
+  enabled: true
+  directory: "./baselines"
+  compare_on_run: true
+  alert_on_regression: true

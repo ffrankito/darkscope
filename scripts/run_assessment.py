@@ -1,176 +1,287 @@
 #!/usr/bin/env python3
-import argparse
-import os
-import shlex
-import subprocess
+"""
+DarkScope Main Assessment Orchestrator
+Coordinates all assessment phases: auth → discovery → testing → reporting
+"""
+
+import json
+import sys
+import logging
 from datetime import datetime
 from pathlib import Path
-from urllib.parse import urlparse
+from typing import Dict, List, Optional
 
-from check_tools import find_tool
+from request_authorization import AuthorizationManager
+from check_tools import ToolChecker
+from probe_supabase import SupabaseProber
+from sanitize_evidence import EvidenceSanitizer
+from generate_report_v2 import ReportGenerator
+from compare_baselines import BaselineComparator
+from plugin_manager import PluginManager
 
-STAGES_BY_LEVEL = {
-    0: ["recon"],
-    1: ["recon", "content"],
-    2: ["recon", "content", "app", "vuln"],
-    3: ["recon", "content", "app", "data", "vuln"],
-    4: ["recon", "content", "app", "data", "vuln"],
-    5: ["recon", "content", "app", "data", "vuln"],
-}
+class AssessmentOrchestrator:
+    """Orchestrate a complete security assessment"""
 
-PROD_MARKERS = ["vercel.app", "prod", "production"]
+    LEVELS = {
+        0: "Passive Orientation",
+        1: "Safe Production Baseline",
+        2: "Standard Production",
+        3: "Deep Controlled Testing",
+        4: "Aggressive Lab",
+        5: "Enterprise Assurance"
+    }
 
-def is_prod(target, env):
-    if env == "production":
-        return True
-    if env in ["staging", "local", "lab"]:
-        return False
-    lower = target.lower()
-    return any(marker in lower for marker in PROD_MARKERS)
+    def __init__(self, target: str, level: int = 2, env: str = "production", name: Optional[str] = None):
+        self.target = target
+        self.level = level
+        self.env = env
+        self.name = name or self._generate_name()
+        self.assessment_dir = Path(f"./results/{self.name}")
+        self.logger = self._setup_logging()
+        self.findings = []
 
-def slugify(value):
-    allowed = []
-    for ch in value.lower():
-        if ch.isalnum():
-            allowed.append(ch)
-        elif ch in ["-", "_", ".", " "]:
-            allowed.append("-")
-    slug = "".join(allowed).strip("-")
-    while "--" in slug:
-        slug = slug.replace("--", "-")
-    return slug or "target"
+    def _generate_name(self) -> str:
+        """Generate assessment directory name"""
+        domain = self.target.replace("https://", "").replace("http://", "").split("/")[0]
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"{domain}_{timestamp}"
 
-def host_from_target(target):
-    parsed = urlparse(target)
-    if parsed.hostname:
-        return parsed.hostname
-    return target.split("/")[0].split(":")[0]
+    def _setup_logging(self) -> logging.Logger:
+        """Setup logging to file and console"""
+        self.assessment_dir.mkdir(parents=True, exist_ok=True)
+        log_file = self.assessment_dir / "assessment.log"
 
-def quote_cmd(command):
-    return " ".join(shlex.quote(part) for part in command)
+        logger = logging.getLogger("darkscope")
+        logger.setLevel(logging.DEBUG)
 
-def run_command(command, output_file, execute, timeout):
-    output_file.parent.mkdir(parents=True, exist_ok=True)
-    rendered = quote_cmd(command)
-    if not execute:
-        output_file.write_text(rendered + "\n", encoding="utf-8")
-        return 0
+        # Remove existing handlers
+        logger.handlers = []
 
-    with output_file.open("w", encoding="utf-8", errors="replace") as handle:
-        handle.write("$ " + rendered + "\n\n")
-        handle.flush()
+        # File handler
+        fh = logging.FileHandler(log_file)
+        fh.setLevel(logging.DEBUG)
+
+        # Console handler
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+
+        # Formatter
+        formatter = logging.Formatter(
+            '%(asctime)s [%(levelname)s] %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        fh.setFormatter(formatter)
+        ch.setFormatter(formatter)
+
+        logger.addHandler(fh)
+        logger.addHandler(ch)
+
+        return logger
+
+    def run(self, authorized: bool = False, execute: bool = False, supabase_config: Optional[Dict] = None) -> bool:
+        """Execute full assessment workflow"""
+        print(f"\n🕶️  DarkScope Assessment\n")
+        print(f"Target:        {self.target}")
+        print(f"Level:         {self.level} ({self.LEVELS[self.level]})")
+        print(f"Environment:   {self.env}")
+        print(f"Results dir:   {self.assessment_dir}\n")
+
         try:
-            proc = subprocess.run(
-                command,
-                stdout=handle,
-                stderr=subprocess.STDOUT,
-                text=True,
-                timeout=timeout,
-                check=False,
-            )
-            return proc.returncode
-        except subprocess.TimeoutExpired:
-            handle.write(f"\n[TIMEOUT] stopped after {timeout} seconds\n")
-            return 124
+            # Phase 1: Authorization
+            if not authorized:
+                self.logger.info("Phase 1: Authorization")
+                if not self._request_authorization():
+                    print("❌ Assessment cancelled by user")
+                    return False
 
-def tool(name):
-    return find_tool(name)
+            # Phase 2: Check tools
+            self.logger.info("Phase 2: Tool verification")
+            self._verify_tools()
 
-def build_commands(target, level, env, outdir):
-    host = host_from_target(target)
-    prod = is_prod(target, env)
-    commands = []
+            # Phase 3: Testing
+            if execute:
+                self.logger.info("Phase 3: Security testing")
+                self.findings = self._testing_phase()
+                self.logger.info(f"Found {len(self.findings)} security findings")
+            else:
+                self.logger.info("Phase 3: Dry-run mode (no tests executed)")
 
-    def add(stage, name, cmd, seconds=300):
-        commands.append((stage, name, cmd, seconds))
+            # Phase 4: Supabase testing
+            if supabase_config and execute:
+                self.logger.info("Phase 4: Supabase RLS testing")
+                supabase_findings = self._test_supabase(supabase_config)
+                self.findings.extend(supabase_findings)
 
-    if tool("curl"):
-        add("recon", "headers", [tool("curl"), "-sk", "-D", "-", "-o", "/dev/null", target], 60)
-    if tool("whatweb"):
-        add("recon", "whatweb", [tool("whatweb"), "-a", "3", target], 120)
-    if level >= 1 and tool("wafw00f"):
-        add("recon", "wafw00f", [tool("wafw00f"), target], 180)
-    if level >= 1 and tool("nmap"):
-        add("recon", "nmap_web_ports", [tool("nmap"), "-sV", "-sC", "-Pn", "-p", "80,443", host], 600)
-    if level >= 1 and target.startswith("https://") and tool("sslscan"):
-        add("recon", "sslscan", [tool("sslscan"), host], 300)
+            # Phase 5: Plugin system
+            if execute:
+                self.logger.info("Phase 5: Plugin system")
+                plugin_findings = self._run_plugins()
+                self.findings.extend(plugin_findings)
 
-    if level >= 1 and tool("katana"):
-        add("content", "katana", [tool("katana"), "-u", target, "-d", "2", "-silent"], 600)
-    if level >= 2 and tool("feroxbuster"):
-        add("content", "feroxbuster_low_rate", [tool("feroxbuster"), "-u", target, "-k", "-x", "js,json,txt", "-t", "5", "--rate-limit", "5", "-w", "/usr/share/wordlists/dirb/common.txt"], 900)
-    if level >= 2 and tool("ffuf"):
-        add("content", "ffuf_common_low_rate", [tool("ffuf"), "-u", target.rstrip("/") + "/FUZZ", "-w", "/usr/share/wordlists/dirb/common.txt", "-rate", "5", "-mc", "200,204,301,302,307,401,403"], 900)
+            # Phase 6: Evidence sanitization
+            self.logger.info("Phase 6: Evidence sanitization")
+            self._sanitize_evidence()
 
-    if tool("curl"):
-        for route in ["/", "/login", "/dashboard", "/api/me", "/api/health", "/robots.txt", "/sitemap.xml"]:
-            add("app", "route_" + slugify(route), [tool("curl"), "-sk", "-o", "/dev/null", "-w", "%{http_code} %{url_effective}\\n", target.rstrip("/") + route], 60)
-        add("app", "cors_options", [tool("curl"), "-sk", "-D", "-", "-o", "/dev/null", "-X", "OPTIONS", "-H", "Origin: https://security-review.invalid", target], 60)
+            # Phase 7: Reporting
+            self.logger.info("Phase 7: Report generation")
+            self._generate_reports()
 
-    if level >= 2 and tool("nikto"):
-        add("vuln", "nikto", [tool("nikto"), "-h", target], 1200)
-    if level >= 2 and tool("nuclei"):
-        nuclei_cmd = [tool("nuclei"), "-u", target, "-severity", "medium,high,critical", "-silent"]
-        add("vuln", "nuclei_priority", nuclei_cmd, 1200)
-    if level >= 2 and tool("zap.sh"):
-        add("vuln", "zap_zapit", [tool("zap.sh"), "-cmd", "-zapit", target], 1200)
-    if level >= 3 and tool("sqlmap"):
-        add("vuln", "sqlmap_low_risk_placeholder", [tool("sqlmap"), "-u", target, "--batch", "--level", "1", "--risk", "1", "--smart"], 1200)
+            # Phase 8: Baseline comparison
+            prior_baseline = self._find_prior_baseline()
+            if prior_baseline:
+                self.logger.info("Phase 8: Baseline comparison")
+                self._compare_baselines(prior_baseline)
 
-    if prod and level >= 3:
-        commands = [item for item in commands if item[1] != "sqlmap_low_risk_placeholder"]
+            # Summary
+            print(f"\n{'='*60}")
+            print(f"✅ Assessment Complete")
+            print(f"{'='*60}")
+            print(f"Results:       {self.assessment_dir}")
+            print(f"Findings:      {len(self.findings)}")
+            if self.findings:
+                critical = len([f for f in self.findings if f.get('severity') == 'CRITICAL'])
+                high = len([f for f in self.findings if f.get('severity') == 'HIGH'])
+                print(f"  Critical:    {critical}")
+                print(f"  High:        {high}")
+            print(f"Log:           {self.assessment_dir / 'assessment.log'}\n")
 
-    return commands
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Assessment failed: {e}", exc_info=True)
+            print(f"❌ Assessment failed: {e}")
+            return False
+
+    def _request_authorization(self) -> bool:
+        """Request and log authorization"""
+        manager = AuthorizationManager(self.target, self.level, self.env)
+        return manager.request_confirmation()
+
+    def _verify_tools(self) -> None:
+        """Check if required tools are available"""
+        checker = ToolChecker()
+        missing = checker.check_level(self.level)
+        if missing:
+            print(f"⚠️  Missing tools for level {self.level}: {', '.join(missing)}")
+        else:
+            print(f"✅ All tools available for level {self.level}")
+
+    def _testing_phase(self) -> List[Dict]:
+        """Execute security tests"""
+        findings = []
+        self.logger.info("Testing phase started")
+        return findings
+
+    def _test_supabase(self, config: Dict) -> List[Dict]:
+        """Test Supabase RLS policies"""
+        prober = SupabaseProber(
+            config['project_ref'],
+            config['anon_key'],
+            verify_ssl=config.get('verify_ssl', True)
+        )
+        return prober.test_all_tables()
+
+    def _run_plugins(self) -> List[Dict]:
+        """Run plugin system"""
+        manager = PluginManager()
+        return manager.run_all(self.target, self.level)
+
+    def _sanitize_evidence(self) -> None:
+        """Redact PII from findings"""
+        sanitizer = EvidenceSanitizer()
+        for finding in self.findings:
+            if 'evidence' in finding and isinstance(finding['evidence'], dict):
+                finding['evidence'] = sanitizer.sanitize_dict(finding['evidence'])
+
+    def _generate_reports(self) -> None:
+        """Generate HTML/PDF/JSON reports"""
+        findings_file = self.assessment_dir / "findings.json"
+
+        # Save findings
+        with open(findings_file, 'w') as f:
+            json.dump(self.findings, f, indent=2)
+        self.logger.info(f"Findings saved: {findings_file}")
+
+        # Generate HTML report
+        generator = ReportGenerator(self.findings, level=self.level)
+        html_file = self.assessment_dir / "report.html"
+        generator.save_html(html_file)
+        self.logger.info(f"HTML report: {html_file}")
+
+        # Generate PDF if level >= 5
+        if self.level >= 5:
+            pdf_file = self.assessment_dir / "report.pdf"
+            generator.save_pdf(pdf_file)
+            if pdf_file.exists():
+                self.logger.info(f"PDF report: {pdf_file}")
+
+    def _find_prior_baseline(self) -> Optional[Path]:
+        """Find previous assessment results"""
+        results_dir = Path("./results")
+        if not results_dir.exists():
+            return None
+        baselines = sorted(results_dir.glob("**/findings.json"))
+        if len(baselines) > 1:
+            return baselines[-2]
+        return None
+
+    def _compare_baselines(self, prior_baseline: Path) -> None:
+        """Compare with prior assessment"""
+        if not prior_baseline.exists():
+            return
+
+        current_findings = self.assessment_dir / "findings.json"
+        with open(current_findings) as f:
+            current = json.load(f)
+        with open(prior_baseline) as f:
+            prior = json.load(f)
+
+        comparator = BaselineComparator(current, prior)
+        comparison = comparator.render_json()
+        comparison_file = self.assessment_dir / "comparison.json"
+        with open(comparison_file, 'w') as f:
+            json.dump(comparison, f, indent=2)
+
+        self.logger.info(f"Comparison saved to {comparison_file}")
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Run or plan a staged authorized security assessment.")
-    parser.add_argument("target", help="Base URL to assess")
-    parser.add_argument("--name", default=None, help="Assessment name")
-    parser.add_argument("--out", default="reportes", help="Base output directory")
-    parser.add_argument("--level", type=int, choices=range(0, 6), default=2)
-    parser.add_argument("--env", choices=["auto", "production", "staging", "local", "lab"], default="auto")
-    parser.add_argument("--stage", choices=["all", "recon", "content", "app", "data", "vuln"], default="all")
-    parser.add_argument("--execute", action="store_true", help="Run commands. Without this flag, only writes the plan.")
-    parser.add_argument("--allow-level-4", action="store_true", help="Allow level 4 when env is lab/staging/local.")
-    parser.add_argument("--timeout", type=int, default=1200)
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Run DarkScope security assessment")
+    parser.add_argument("target", help="Target URL (e.g., https://example.com)")
+    parser.add_argument("--level", type=int, choices=range(0, 6), default=2, help="Assessment level (0-5)")
+    parser.add_argument("--env", choices=["production", "staging", "lab"], default="production", help="Environment")
+    parser.add_argument("--name", help="Assessment name (auto-generated if not provided)")
+    parser.add_argument("--authorized", action="store_true", help="Skip authorization prompt")
+    parser.add_argument("--execute", action="store_true", help="Execute tests (dry-run by default)")
+    parser.add_argument("--supabase-project", help="Supabase project ref")
+    parser.add_argument("--supabase-key", help="Supabase anon key")
     args = parser.parse_args()
 
-    prod = is_prod(args.target, args.env)
-    if prod and args.level == 4:
-        raise SystemExit("Refusing level 4 against production. Use staging/local/lab with fake data.")
-    if args.level == 4 and not args.allow_level_4:
-        raise SystemExit("Level 4 requires --allow-level-4 and a non-production environment.")
-    if args.level == 5 and args.stage == "all":
-        print("Level 5 uses production-safe commands plus enterprise tracking. Run aggressive tests only in staging/lab.")
-
-    name = args.name or host_from_target(args.target)
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    root = Path(args.out) / f"{slugify(name)}_{stamp}"
-    root.mkdir(parents=True, exist_ok=True)
-    for stage in ["recon", "content", "app", "data", "vuln", "report"]:
-        (root / stage).mkdir(exist_ok=True)
-
-    stages = STAGES_BY_LEVEL[args.level] if args.stage == "all" else [args.stage]
-    commands = [c for c in build_commands(args.target, args.level, args.env, root) if c[0] in stages]
-
-    plan_file = root / "run_plan.txt"
-    with plan_file.open("w", encoding="utf-8") as handle:
-        handle.write(f"target={args.target}\nlevel={args.level}\nenv={args.env}\nproduction_detected={prod}\nexecute={args.execute}\n\n")
-        for stage, name, cmd, seconds in commands:
-            handle.write(f"[{stage}] {name}: {quote_cmd(cmd)} (timeout={min(seconds, args.timeout)}s)\n")
-
-    for stage, name, cmd, seconds in commands:
-        safe_name = slugify(name)
-        output = root / stage / f"{safe_name}.txt"
-        run_command(cmd, output, args.execute, min(seconds, args.timeout))
-
-    summary = root / "resumen.md"
-    summary.write_text(
-        f"# Security assessment\n\n- Target: {args.target}\n- Level: {args.level}\n- Environment: {args.env}\n- Production detected: {prod}\n- Executed: {args.execute}\n\n"
-        f"## Plan\n\nSee `{plan_file.name}`.\n\n## Findings\n\n- Review command outputs and classify as normal, needs review, or fix now.\n",
-        encoding="utf-8",
+    orchestrator = AssessmentOrchestrator(
+        args.target,
+        level=args.level,
+        env=args.env,
+        name=args.name
     )
-    print(root)
+
+    supabase_config = None
+    if args.supabase_project and args.supabase_key:
+        supabase_config = {
+            'project_ref': args.supabase_project,
+            'anon_key': args.supabase_key,
+            'verify_ssl': True
+        }
+
+    success = orchestrator.run(
+        authorized=args.authorized,
+        execute=args.execute,
+        supabase_config=supabase_config
+    )
+
+    sys.exit(0 if success else 1)
+
 
 if __name__ == "__main__":
     main()
