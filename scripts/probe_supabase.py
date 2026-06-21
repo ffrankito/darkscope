@@ -52,7 +52,7 @@ class SupabaseProber:
         """Get list of tables from REST API"""
         try:
             response = requests.get(
-                f"{self.rest_url}/?apikey={self.anon_key}",
+                f"{self.rest_url}/",
                 headers={"apikey": self.anon_key},
                 verify=self.verify_ssl,
                 timeout=10
@@ -62,7 +62,7 @@ class SupabaseProber:
                 # Supabase lists available tables
                 return [t for t in response.json() if isinstance(t, str)]
         except Exception as e:
-            print(f"⚠️  Error discovering tables: {e}")
+            print(f"⚠️  Error discovering tables: {type(e).__name__}")
 
         # Fallback: test common table names
         return self._test_common_tables()

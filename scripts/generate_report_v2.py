@@ -6,6 +6,7 @@ Supports Levels 0-5 with enterprise-grade reporting for Level 5.
 
 import json
 import sys
+import html
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -139,18 +140,23 @@ class ReportGenerator:
             findings = by_owner[owner]
             critical_count = len([f for f in findings if f.get('severity') == 'CRITICAL'])
 
+            owner_safe = html.escape(str(owner))
             html += f"""
-            <h3>Owned by: {owner} ({len(findings)} findings, {critical_count} critical)</h3>
+            <h3>Owned by: {owner_safe} ({len(findings)} findings, {critical_count} critical)</h3>
             <ul>
             """
 
             for finding in findings:
+                title = html.escape(str(finding.get('title', 'Unknown')))
+                severity = html.escape(str(finding.get('severity', 'INFO')))
+                due_date = html.escape(str(finding.get('due_date', 'TBD')))
+                recommendation = html.escape(str(finding.get('recommendation', 'N/A')))
                 html += f"""
                 <li>
-                    <strong>{finding.get('title', 'Unknown')}</strong>
-                    <br/>Severity: {finding.get('severity', 'INFO')}
-                    <br/>Due: {finding.get('due_date', 'TBD')}
-                    <br/>Recommendation: {finding.get('recommendation', 'N/A')}
+                    <strong>{title}</strong>
+                    <br/>Severity: {severity}
+                    <br/>Due: {due_date}
+                    <br/>Recommendation: {recommendation}
                 </li>
                 """
 

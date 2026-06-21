@@ -6,6 +6,7 @@ Tracks assessment history, trends, and program health over time.
 
 import json
 import sys
+import html
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -199,11 +200,11 @@ class Dashboard:
         """Render assessment history table"""
         rows = ""
         for i, date_entry in enumerate(trends['total']):
-            date = date_entry['date']
-            critical = trends['critical'][i]['count']
-            high = trends['high'][i]['count']
-            medium = trends['medium'][i]['count']
-            total = date_entry['count']
+            date = html.escape(str(date_entry['date']))
+            critical = html.escape(str(trends['critical'][i]['count']))
+            high = html.escape(str(trends['high'][i]['count']))
+            medium = html.escape(str(trends['medium'][i]['count']))
+            total = html.escape(str(date_entry['count']))
 
             rows += f"""
             <tr>

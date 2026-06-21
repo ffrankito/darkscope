@@ -103,8 +103,7 @@ class NeoVetCrmPlugin(DarkScopePlugin):
         try:
             response = requests.get(
                 f"{target}/api/consent-documents",
-                timeout=10,
-                verify=False
+                timeout=10
             )
 
             if response.status_code == 200:
