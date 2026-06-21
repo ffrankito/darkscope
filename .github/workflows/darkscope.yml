@@ -1,0 +1,192 @@
+name: DarkScope Security Assessment
+
+on:
+  schedule:
+    # Weekly security assessment (Sunday 2 AM UTC)
+    - cron: '0 2 * * 0'
+
+  workflow_dispatch:
+    inputs:
+      level:
+        description: 'Assessment level (0-5)'
+        required: true
+        default: '2'
+        type: choice
+        options:
+          - '0'
+          - '1'
+          - '2'
+          - '3'
+          - '4'
+          - '5'
+      target:
+        description: 'Target URL to assess'
+        required: false
+        type: string
+
+jobs:
+  assessment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout DarkScope
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt || true
+          sudo apt-get update
+          sudo apt-get install -y curl jq nmap whatweb 2>/dev/null || true
+
+      - name: Check/Install tools
+        run: |
+          python3 scripts/check_tools.py --level ${{ inputs.level || '2' }}
+
+      - name: Request authorization
+        env:
+          TARGET: ${{ inputs.target || secrets.DARKSCOPE_TARGET }}
+          LEVEL: ${{ inputs.level || '2' }}
+        run: |
+          python3 scripts/request_authorization.py \
+            "$TARGET" \
+            --level "$LEVEL" \
+            --auto-approve \
+            --env production
+
+      - name: Run assessment
+        id: assessment
+        env:
+          TARGET: ${{ inputs.target || secrets.DARKSCOPE_TARGET }}
+          LEVEL: ${{ inputs.level || '2' }}
+        run: |
+          mkdir -p ./results
+          python3 scripts/run_assessment.py \
+            "$TARGET" \
+            --level "$LEVEL" \
+            --output ./results \
+            --execute \
+            --ci
+
+      - name: Probe Supabase (if applicable)
+        if: secrets.SUPABASE_PROJECT_REF != ''
+        continue-on-error: true
+        env:
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          python3 scripts/probe_supabase.py \
+            --project-ref "$PROJECT_REF" \
+            --anon-key "$ANON_KEY" \
+            --output ./results/supabase_probe.json \
+            --test-cors
+
+      - name: Sanitize evidence
+        if: always()
+        continue-on-error: true
+        run: |
+          python3 scripts/sanitize_evidence.py \
+            ./results \
+            --aggressive \
+            --pattern "*.json"
+
+      - name: Generate report
+        if: always()
+        run: |
+          python3 scripts/generate_report.py \
+            ./results/resumen.md \
+            --title "DarkScope Assessment - $(date +%Y-%m-%d)" \
+            --output ./results/report.html \
+            --pdf ./results/report.pdf
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: darkscope-results
+          path: results/
+          retention-days: 90
+
+      - name: Compare with baseline
+        if: always()
+        continue-on-error: true
+        run: |
+          python3 scripts/compare_baselines.py \
+            --current ./results/findings.json \
+            --fail-on-regression || true
+
+      - name: Post results to Slack
+        if: failure()
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {
+              "text": "🚨 DarkScope found critical security findings",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*DarkScope Security Assessment Failed*\n*Target:* ${{ inputs.target || secrets.DARKSCOPE_TARGET }}\n*Level:* ${{ inputs.level || '2' }}\n*Status:* Critical findings detected"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": {
+                        "type": "plain_text",
+                        "text": "View Report"
+                      },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Create GitHub Issue if critical findings
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const findings = JSON.parse(fs.readFileSync('./results/findings.json', 'utf8'));
+            const critical = findings.filter(f => f.severity === 'CRITICAL');
+
+            if (critical.length > 0) {
+              github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🚨 DarkScope: ${critical.length} critical findings`,
+                body: `## Critical Findings\n\n${critical.map(f => `- **${f.table}**: ${f.operation}\n`).join('')}\n\n[View full report](${context.payload.repository.html_url}/actions/runs/${context.runId})`,
+                labels: ['security', 'critical', 'darkscope']
+              });
+            }
+
+      - name: Regression check
+        if: always()
+        run: |
+          python3 scripts/compare_baselines.py \
+            --current ./results/findings.json \
+            --fail-on-regression
+        continue-on-error: true
+
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: assessment
+    steps:
+      - name: Summary
+        run: |
+          echo "✅ DarkScope assessment completed"
+          echo "📊 Results: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
