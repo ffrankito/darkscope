@@ -600,15 +600,15 @@ def main():
     ASSESSMENTS_DIR = Path(args.dir)
 
     if not ASSESSMENTS_DIR.exists():
-        print(f'⚠️  Directory not found: {ASSESSMENTS_DIR.resolve()}')
-        print(f'   The dashboard will show an empty state until you run an assessment.')
+        print(f'[!] Directory not found: {ASSESSMENTS_DIR.resolve()}')
+        print(f'    Dashboard will show empty state until you run an assessment.')
 
     url = f'http://localhost:{args.port}'
-    print(f'\n🕶️  DarkScope Dashboard')
-    print(f'   Serving: {url}')
-    print(f'   Data dir: {ASSESSMENTS_DIR.resolve()}')
-    print(f'   Auto-refresh: every 30s\n')
-    print(f'   Ctrl+C to stop\n')
+    print(f'\n[*] DarkScope Dashboard')
+    print(f'    Serving : {url}')
+    print(f'    Data dir: {ASSESSMENTS_DIR.resolve()}')
+    print(f'    Refresh : every 30s')
+    print(f'    Stop    : Ctrl+C\n')
 
     threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     app.run(host='127.0.0.1', port=args.port, debug=False)
