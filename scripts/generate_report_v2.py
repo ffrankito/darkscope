@@ -6,7 +6,7 @@ Supports Levels 0-5 with enterprise-grade reporting for Level 5.
 
 import json
 import sys
-import html
+import html as html_lib
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
@@ -39,7 +39,7 @@ class ReportGenerator:
 
         delta = self._compute_delta()
 
-        html = f"""
+        out = f"""
         <section class="executive-summary">
             <h2>Executive Summary</h2>
 
@@ -72,7 +72,7 @@ class ReportGenerator:
             {self._render_recommendation()}
         </section>
         """
-        return html
+        return out
 
     def render_findings_by_severity(self) -> str:
         """Render findings grouped by severity"""
@@ -81,7 +81,7 @@ class ReportGenerator:
             severity = finding.get('severity', 'INFO')
             by_severity[severity].append(finding)
 
-        html = '<section class="findings"><h2>Findings</h2>'
+        out = '<section class="findings"><h2>Findings</h2>'
 
         for severity in sorted(self.SEVERITY_ORDER.keys(), key=lambda x: self.SEVERITY_ORDER[x]):
             if severity not in by_severity:
@@ -90,7 +90,7 @@ class ReportGenerator:
             findings = by_severity[severity]
             color = self.SEVERITY_COLORS[severity]
 
-            html += f"""
+            out += f"""
             <h3 style="color: {color}">● {severity} ({len(findings)})</h3>
             <table class="findings-table">
                 <thead>
@@ -105,12 +105,12 @@ class ReportGenerator:
             """
 
             for finding in findings:
-                owner = finding.get('owner', 'UNASSIGNED')
-                due_date = finding.get('due_date', 'TBD')
-                asset = finding.get('table', 'N/A')
-                title = finding.get('title', finding.get('operation', 'Unknown'))
+                owner    = html_lib.escape(str(finding.get('owner', 'UNASSIGNED')))
+                due_date = html_lib.escape(str(finding.get('due_date', 'TBD')))
+                asset    = html_lib.escape(str(finding.get('table', 'N/A')))
+                title    = html_lib.escape(str(finding.get('title', finding.get('operation', 'Unknown'))))
 
-                html += f"""
+                out += f"""
                 <tr>
                     <td>{asset}</td>
                     <td>{title}</td>
@@ -119,13 +119,13 @@ class ReportGenerator:
                 </tr>
                 """
 
-            html += """
+            out += """
                 </tbody>
             </table>
             """
 
-        html += '</section>'
-        return html
+        out += '</section>'
+        return out
 
     def render_remediation_roadmap(self) -> str:
         """Remediation roadmap (Level 5 feature)"""
@@ -134,24 +134,24 @@ class ReportGenerator:
             owner = finding.get('owner', 'UNASSIGNED')
             by_owner[owner].append(finding)
 
-        html = '<section class="remediation"><h2>Remediation Roadmap</h2>'
+        out = '<section class="remediation"><h2>Remediation Roadmap</h2>'
 
         for owner in sorted(by_owner.keys()):
             findings = by_owner[owner]
             critical_count = len([f for f in findings if f.get('severity') == 'CRITICAL'])
 
-            owner_safe = html.escape(str(owner))
-            html += f"""
+            owner_safe = html_lib.escape(str(owner))
+            out += f"""
             <h3>Owned by: {owner_safe} ({len(findings)} findings, {critical_count} critical)</h3>
             <ul>
             """
 
             for finding in findings:
-                title = html.escape(str(finding.get('title', 'Unknown')))
-                severity = html.escape(str(finding.get('severity', 'INFO')))
-                due_date = html.escape(str(finding.get('due_date', 'TBD')))
-                recommendation = html.escape(str(finding.get('recommendation', 'N/A')))
-                html += f"""
+                title          = html_lib.escape(str(finding.get('title', 'Unknown')))
+                severity       = html_lib.escape(str(finding.get('severity', 'INFO')))
+                due_date       = html_lib.escape(str(finding.get('due_date', 'TBD')))
+                recommendation = html_lib.escape(str(finding.get('recommendation', 'N/A')))
+                out += f"""
                 <li>
                     <strong>{title}</strong>
                     <br/>Severity: {severity}
@@ -160,10 +160,10 @@ class ReportGenerator:
                 </li>
                 """
 
-            html += '</ul>'
+            out += '</ul>'
 
-        html += '</section>'
-        return html
+        out += '</section>'
+        return out
 
     def _compute_delta(self) -> Dict:
         """Compare current findings to prior baseline"""
@@ -192,7 +192,7 @@ class ReportGenerator:
         new = len(delta['new'])
         regressions = len(delta['regressions'])
 
-        html = f"""
+        out = f"""
         <ul>
             <li>✅ <strong>{fixed}</strong> findings fixed</li>
             <li>🆕 <strong>{new}</strong> new findings</li>
@@ -201,9 +201,9 @@ class ReportGenerator:
         """
 
         if regressions > 0:
-            html += '<p style="color: red;"><strong>⚠️ REGRESSIONS DETECTED: Review recently fixed findings.</strong></p>'
+            out += '<p style="color: red;"><strong>⚠️ REGRESSIONS DETECTED: Review recently fixed findings.</strong></p>'
 
-        return html
+        return out
 
     def _render_recommendation(self) -> str:
         """Render security recommendation"""
@@ -241,7 +241,7 @@ class ReportGenerator:
 
     def render_html(self) -> str:
         """Render complete HTML report"""
-        html = f"""
+        out = f"""
         <!DOCTYPE html>
         <html>
         <head>
@@ -270,7 +270,7 @@ class ReportGenerator:
         </body>
         </html>
         """
-        return html
+        return out
 
     @staticmethod
     def _render_css() -> str:

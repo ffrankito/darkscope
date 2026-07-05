@@ -43,7 +43,7 @@ class SQLTesting:
         print("   ├─ Manual SQLi testing...", end=" ", flush=True)
 
         common_params = ["id", "user", "search", "q", "page", "sort", "category"]
-        payloads = ["'", "' OR '1'='1", "' OR 1=1--", "'; DROP TABLE users--"]
+        payloads = ["'", "' OR '1'='1", "' OR 1=1--", "' AND '1'='2", "' AND SLEEP(0)--"]
 
         vulnerable = []
         for param in common_params:

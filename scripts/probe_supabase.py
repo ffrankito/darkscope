@@ -92,23 +92,24 @@ class SupabaseProber:
 
         return found
 
+    BLOCKED_CODES = {401, 403, 404, 405}
+
     def _test_table_rls(self, table: str) -> None:
         """Test SELECT/INSERT/UPDATE/DELETE on a table"""
         operations = [
-            ("SELECT", "get", lambda: self._test_select(table)),
-            ("INSERT", "post", lambda: self._test_insert(table)),
-            ("UPDATE", "patch", lambda: self._test_update(table)),
-            ("DELETE", "delete", lambda: self._test_delete(table)),
+            ("SELECT", lambda: self._test_select(table)),
+            ("INSERT", lambda: self._test_insert(table)),
+            ("UPDATE", lambda: self._test_update(table)),
+            ("DELETE", lambda: self._test_delete(table)),
         ]
 
-        for op_name, method, test_func in operations:
+        for op_name, test_func in operations:
             result = test_func()
             status = result['status']
             accessible = result['accessible']
 
-            # Log findings
             if accessible:
-                severity = "CRITICAL" if op_name in ["SELECT", "INSERT", "UPDATE", "DELETE"] else "HIGH"
+                severity = "CRITICAL" if op_name in ("SELECT", "INSERT") else "HIGH"
                 finding = {
                     "table": table,
                     "operation": op_name,
@@ -155,7 +156,7 @@ class SupabaseProber:
             }
 
     def _test_insert(self, table: str) -> Dict[str, Any]:
-        """Test INSERT with invalid body (no data writes)"""
+        """Test INSERT — only CRITICAL if row was actually created (HTTP 201)"""
         try:
             response = requests.post(
                 f"{self.rest_url}/{table}",
@@ -165,22 +166,15 @@ class SupabaseProber:
                 timeout=10
             )
 
-            # 401/403 = good (blocked by RLS)
-            # 400 = bad (validation error, RLS didn't block)
-            # 201 = critical (actually inserted)
-            accessible = response.status_code not in [401, 403]
+            accessible = response.status_code == 201
 
             return {
                 "status": response.status_code,
                 "accessible": accessible,
-                "reason": "RLS blocked" if not accessible else "RLS did not block insert attempt"
+                "reason": "Row inserted without authentication" if accessible else "RLS blocked"
             }
         except Exception as e:
-            return {
-                "status": 0,
-                "accessible": False,
-                "error": str(e)
-            }
+            return {"status": 0, "accessible": False, "error": str(e)}
 
     def _test_update(self, table: str) -> Dict[str, Any]:
         """Test UPDATE with nonexistent ID (no data writes)"""
@@ -193,7 +187,7 @@ class SupabaseProber:
                 timeout=10
             )
 
-            accessible = response.status_code not in [401, 403]
+            accessible = response.status_code not in self.BLOCKED_CODES
 
             return {
                 "status": response.status_code,
@@ -201,11 +195,7 @@ class SupabaseProber:
                 "reason": "RLS blocked" if not accessible else "RLS did not block update attempt"
             }
         except Exception as e:
-            return {
-                "status": 0,
-                "accessible": False,
-                "error": str(e)
-            }
+            return {"status": 0, "accessible": False, "error": str(e)}
 
     def _test_delete(self, table: str) -> Dict[str, Any]:
         """Test DELETE with nonexistent ID (no data writes)"""
@@ -217,7 +207,7 @@ class SupabaseProber:
                 timeout=10
             )
 
-            accessible = response.status_code not in [401, 403]
+            accessible = response.status_code not in self.BLOCKED_CODES
 
             return {
                 "status": response.status_code,
@@ -225,11 +215,7 @@ class SupabaseProber:
                 "reason": "RLS blocked" if not accessible else "RLS did not block delete attempt"
             }
         except Exception as e:
-            return {
-                "status": 0,
-                "accessible": False,
-                "error": str(e)
-            }
+            return {"status": 0, "accessible": False, "error": str(e)}
 
     def inspect_jwt(self, token: str) -> Dict[str, Any]:
         """Decode and inspect JWT claims"""
