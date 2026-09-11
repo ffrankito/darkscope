@@ -167,6 +167,10 @@ class Sanitizer:
         return output_dir
 
 
+# Alias expected by run_assessment.py
+EvidenceSanitizer = Sanitizer
+
+
 def main():
     import argparse
 

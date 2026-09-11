@@ -115,6 +115,24 @@ def install_tool(tool, auto=False):
         print(f"❌ Failed to install {tool}: {e}")
         return False
 
+class ToolChecker:
+    """Object-oriented wrapper used by run_assessment.py"""
+
+    def __init__(self):
+        self.level_tools = LEVEL_TOOLS
+
+    def check_level(self, level):
+        """Return a list of tools required for `level` that are missing."""
+        tools = self.level_tools.get(level, [])
+        return [tool for tool in tools if not find_tool(tool)]
+
+    def find(self, tool):
+        return find_tool(tool)
+
+    def install(self, tool, auto=False):
+        return install_tool(tool, auto=auto)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Check/install tools for DarkScope.")
     parser.add_argument("--level", type=int, choices=range(0, 6), default=2, help="Assessment level (0-5)")
